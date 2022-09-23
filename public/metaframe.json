@@ -1,16 +1,80 @@
 {
-	"version": "0.3",
+	"version": "0.6",
 	"metadata": {
-		"title": "metaframe-template"
+		"name": "Molstar Molecule Viewer"
 	},
 	"inputs": {
-		"*": {
-			"type": "application/octet-stream:base64"
+		"pdb-id": {
+			"type": "text/pdb-id"
+		},
+		"config": {
+			"type": "json/molstar-config"
 		}
 	},
-    "outputs": {
-		"*": {
-			"type": "application/octet-stream:base64"
+	"outputs": {
+		"pdb-id": {
+			"type": "text/pdb-id"
+		}
+	},
+	"operations": {
+		"edit": {
+			"type": "metapage",
+			"metapage": {
+				"meta": {
+					"layouts": {
+						"react-grid-layout": {
+							"props": {
+								"cols": 12,
+								"margin": [
+									10,
+									20
+								],
+								"rowHeight": 100,
+								"containerPadding": [
+									5,
+									5
+								]
+							},
+							"layout": [
+								{
+									"h": 2,
+									"i": "pdb",
+									"w": 3,
+									"x": 0,
+									"y": 0,
+									"moved": false,
+									"static": false
+								},
+								{
+									"h": 4,
+									"i": "molstar",
+									"w": 9,
+									"x": 3,
+									"y": 0,
+									"moved": false,
+									"static": false
+								}
+							]
+						}
+					}
+				},
+				"version": "0.3",
+				"metaframes": {
+					"pdb": {
+						"url": "https://metapages.org/metaframes/pdb-input-button/"
+					},
+					"molstar": {
+						"url": "https://molstar.mtfm:io/",
+						"inputs": [
+							{
+								"source": "pdb_id",
+								"target": "pdb-id",
+								"metaframe": "pdb"
+							}
+						]
+					}
+				}
+			}
 		}
 	}
 }

@@ -1,5 +1,4 @@
-import { FunctionalComponent } from "preact";
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useState } from "react";
 import {
   Drawer,
   DrawerOverlay,
@@ -11,7 +10,7 @@ import {
 import { isIframe } from "@metapages/metaframe-hook";
 import { QuestionIcon } from "@chakra-ui/icons";
 
-export const ButtonHelp: FunctionalComponent<{ url?: string }> = ({ url }) => {
+export const ButtonHelp: React.FC<{ url?: string }> = ({ url }) => {
   const [open, setOpen] = useState<boolean>(isIframe() || window.location.hash.length >= 3 ? false : true);
 
   url = url
@@ -37,7 +36,7 @@ export const ButtonHelp: FunctionalComponent<{ url?: string }> = ({ url }) => {
   );
 };
 
-const HelpPanel: FunctionalComponent<{
+const HelpPanel: React.FC<{
   url: string;
   isOpen: boolean;
   setOpen: (open: boolean) => void;

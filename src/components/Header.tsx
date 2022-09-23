@@ -1,4 +1,3 @@
-import { FunctionalComponent } from "preact";
 import {
   Box,
   Flex,
@@ -23,7 +22,7 @@ const options: Option[] = [
   },
 ];
 
-export const Header: FunctionalComponent = () => {
+export const Header: React.FC = () => {
   return (
     <Flex>
       <Flex flexDirection="column">

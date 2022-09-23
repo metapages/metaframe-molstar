@@ -3,10 +3,11 @@
 import fs from "fs";
 import { resolve } from "path";
 import { defineConfig } from "vite";
-import preact from "@preact/preset-vite";
+import react from "@vitejs/plugin-react";
 
+type DeployTargetType = "glitch" | "lib";
 // values acted on: [glitch | lib]
-const DEPLOY_TARGET: string | undefined = process.env.DEPLOY_TARGET;
+const DEPLOY_TARGET = process.env.DEPLOY_TARGET as DeployTargetType | undefined;
 const HOST: string = process.env.HOST || "metaframe1.localhost";
 const PORT: string = process.env.PORT || "4440";
 const CERT_FILE: string | undefined = process.env.CERT_FILE;
@@ -27,24 +28,16 @@ export default defineConfig(({ command, mode }) => ({
   base: BASE,
   resolve: {
     alias: {
-      react: "preact/compat",
-      "react-dom": "preact/compat",
-      "react/jsx-runtime": "preact/jsx-runtime",
-      "react-dom/test-utils": "preact/test-utils",
       "/@": resolve(__dirname, "./src"),
     },
   },
-  jsx: {
-    factory: "h",
-    fragment: "Fragment",
-  },
-  plugins: [preact()],
+  plugins: [react()],
   build: {
     outDir: DEPLOY_TARGET === "lib" ? "dist" : OUTDIR,
     target: "esnext",
     sourcemap: true,
     minify: mode === "development" ? false : "esbuild",
-    emptyOutDir: DEPLOY_TARGET === "glitch",
+    emptyOutDir: DEPLOY_TARGET === "glitch" || DEPLOY_TARGET === "lib",
     lib:
       DEPLOY_TARGET === "lib"
         ? {

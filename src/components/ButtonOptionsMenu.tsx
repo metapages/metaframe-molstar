@@ -1,5 +1,4 @@
-import { FunctionalComponent } from "preact";
-import { useEffect, useState, useCallback } from "preact/hooks";
+import { useEffect, useState, useCallback } from "react";
 import { useHashParamJson } from "@metapages/hash-query";
 import {
   Box,
@@ -57,7 +56,7 @@ const useOptions = (options: Option[], chosenOptions?: GenericOptions) => {
   return [optionsState];
 };
 
-export const ButtonOptionsMenu: FunctionalComponent<{
+export const ButtonOptionsMenu: React.FC<{
   options: Option[];
   hashkey?: string;
 }> = ({ hashkey, options }) => {
@@ -89,7 +88,7 @@ export const ButtonOptionsMenu: FunctionalComponent<{
 
 export type GenericOptions = Record<string, string | boolean | number | undefined>;
 
-const OptionsMenu: FunctionalComponent<{
+const OptionsMenu: React.FC<{
   isOpen: boolean;
   setOpen: (open: boolean) => void;
   options: Option[];

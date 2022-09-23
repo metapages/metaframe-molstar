@@ -12,7 +12,7 @@ It has everything you need to get a connectable [metaframe](https://metapages.or
    - Fork
    - Create new repository
       1) Clone the new repository and go there in the terminal
-      2) `git remote add upstream git@github.com:metapages/metaframe-template-preact.git`
+      2) `git remote add upstream git@github.com:metapages/metaframe-molstar.git`
       3) `git fetch upstream`
       4) `git checkout -b upstream upstream/main`
       5) `git branch -d main`
@@ -56,7 +56,7 @@ That's it. Commands are self-documenting: just type `just`
    - single command publishing to [npm](https://www.npmjs.com/)
    - single command publishing to [github pages](https://pages.github.com/)
    - `vite` for fast building
-   - `preact` for efficient, fast loading sites
+   - `react` for efficient, fast loading sites
    - `typescript` for type checking
    - `chakra-ui.com` for the UI framework
    - `just` for a single method to build/test/deploy/publish
