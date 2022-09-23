@@ -1,0 +1,5 @@
+# Possibly set Cross-Origin-Embedder-Policy later
+/*
+  Access-Control-Allow-Origin: *
+  #Cross-Origin-Embedder-Policy: require-corp
+  #Cross-Origin-Resource-Policy: cross-origin
