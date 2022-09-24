@@ -14,12 +14,7 @@ export const MolstarViewer: React.FC = () => {
   const metaframeBlob = useMetaframeAndInput();
 
   useEffect(() => {
-    const pdbId: string | undefined = metaframeBlob?.inputs?.["pdb-id"];
-    if (
-      !metaframeBlob?.inputs?.["config"] ||
-      metaframeBlob?.inputs?.["pdb-id"] ||
-      !ref.current
-    ) {
+    if (!ref.current) {
       return;
     }
 
@@ -28,6 +23,8 @@ export const MolstarViewer: React.FC = () => {
     const options = metaframeBlob?.inputs?.["config"] ?? {
       hideControls: true,
     };
+
+    const pdbId: string = metaframeBlob?.inputs?.["pdb-id"];// ?? "1tqn";
 
     options.moleculeId = options.moleculeId ?? pdbId?.toLowerCase();
 
