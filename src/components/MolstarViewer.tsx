@@ -24,12 +24,14 @@ export const MolstarViewer: React.FC = () => {
       hideControls: true,
     };
 
-    const pdbId: string = metaframeBlob?.inputs?.["pdb-id"];// ?? "1tqn";
+    const pdbId: string = metaframeBlob?.inputs?.["pdb-id"] ?? "1tqn";
 
     options.moleculeId = options.moleculeId ?? pdbId?.toLowerCase();
 
     //Get element from HTML/Template to place the viewer
     const viewerContainer = ref.current;
+
+    console.log('refInstance.current', refInstance.current);
 
     //Call render method to display the 3D view
     if (refInstance.current) {
