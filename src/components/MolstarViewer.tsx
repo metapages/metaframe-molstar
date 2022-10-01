@@ -31,8 +31,6 @@ export const MolstarViewer: React.FC = () => {
     //Get element from HTML/Template to place the viewer
     const viewerContainer = ref.current;
 
-    console.log('refInstance.current', refInstance.current);
-
     //Call render method to display the 3D view
     if (refInstance.current) {
       refInstance.current.visual.update(options);
