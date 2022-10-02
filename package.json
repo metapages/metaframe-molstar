@@ -26,7 +26,7 @@
     "@emotion/styled": "^11.10.4",
     "@metapages/hash-query": "^0.4.5",
     "@metapages/metaframe-hook": "^1.0.11",
-    "@metapages/metapage": "^0.13.5",
+    "@metapages/metapage": "^0.13.6",
     "framer-motion": "^7.3.6",
     "molstar": "^3.19.0",
     "react": "^18.2.0",
