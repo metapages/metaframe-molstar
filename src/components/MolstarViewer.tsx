@@ -25,7 +25,6 @@ export const MolstarViewer: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
   const refInstance = useRef<Viewer | null>(null);
   const metaframeBlob = useMetaframeAndInput();
-  const [viewer, setViewer] = useState<Viewer | undefined>();
   const [xtcFile, setxtcFile] = useState<Blob | undefined>();
   const [groFile, setgroFile] = useState<Blob | undefined>();
   const [pdbId, setPdbId] = useState<string | undefined>();
@@ -36,35 +35,57 @@ export const MolstarViewer: React.FC = () => {
 
   // show pdbId
   useEffect(() => {
-    if (pdbId && viewer) {
-      viewer.loadPdb(pdbId);
+    if (pdbId) {
+      if (refInstance.current) {
+        refInstance.current.plugin.dispose();
+        refInstance.current = null;
+      }
+      const viewerContainer = ref.current;
+      if (!viewerContainer) {
+        return;
+      }
+
+      (async () => {
+        refInstance.current = await Viewer.create(viewerContainer, {
+          ...options,
+        });
+        refInstance.current.loadPdb(pdbId);
+      })();
     }
-  }, [pdbId, viewer]);
+  }, [pdbId, options, refInstance, ref]);
 
   // show trajectories
   useEffect(() => {
-    if (!viewer) {
-      return;
-    }
     if (!xtcFile || !groFile) {
       return;
     }
+    const viewerContainer = ref.current;
+    if (!viewerContainer) {
+      return;
+    }
 
-    const xtcObjectUrl = URL.createObjectURL(xtcFile);
-    const groObjectUrl = URL.createObjectURL(groFile);
+    (async () => {
+      (async () => {
+        refInstance.current = await Viewer.create(viewerContainer, {
+          ...options,
+        });
+        const xtcObjectUrl = URL.createObjectURL(xtcFile);
+        const groObjectUrl = URL.createObjectURL(groFile);
 
-    viewer.loadTrajectory({
-      model: { kind: "model-url", url: groObjectUrl, format: "gro" },
-      coordinates: {
-        kind: "coordinates-url",
-        url: xtcObjectUrl,
-        format: "xtc",
-        isBinary: true,
-      },
-      // preset: "all-models", // or 'default'
-      preset: "default", // or 'default'
-    });
-  }, [viewer, xtcFile, groFile]);
+        refInstance.current.loadTrajectory({
+          model: { kind: "model-url", url: groObjectUrl, format: "gro" },
+          coordinates: {
+            kind: "coordinates-url",
+            url: xtcObjectUrl,
+            format: "xtc",
+            isBinary: true,
+          },
+          // preset: "all-models", // or 'default'
+          preset: "default", // or 'default'
+        });
+      })();
+    })();
+  }, [xtcFile, groFile, options, refInstance, ref]);
 
   // create the viewer or update options
   useEffect(() => {
@@ -83,20 +104,15 @@ export const MolstarViewer: React.FC = () => {
         refInstance.current = await Viewer.create(viewerContainer, {
           ...options,
         });
-        setViewer(refInstance.current);
       }
     })();
-  }, [ref, refInstance, setViewer, options]);
+  }, [ref, refInstance, options]);
 
   // handle metaframe inputs
   useEffect(() => {
     if (metaframeBlob?.inputs?.["pdb-id"]) {
       setPdbId(metaframeBlob?.inputs?.["pdb-id"]);
     }
-
-    // if (metaframeBlob?.inputs?.["config"]) {
-    //   setOptions(metaframeBlob?.inputs?.["config"]);
-    // }
 
     if (metaframeBlob?.inputs?.["target.xtc"]) {
       setxtcFile(metaframeBlob?.inputs?.["target.xtc"]);
