@@ -1,6 +1,5 @@
 # deno not node because long-term deno will be used for all non-trivial scripting
-FROM denoland/deno:alpine-1.25.2
-
+FROM denoland/deno:alpine-1.34.1
 RUN apk --no-cache --update add \
     bash \
     curl \
@@ -11,7 +10,7 @@ RUN apk --no-cache --update add \
     ripgrep
 
 # Needs edge repo
-RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+RUN apk add --no-cache -X https://dl-cdn.alpinelinux.org/alpine/edge/testing \
     sd
 
 ###############################################################################

@@ -1,8 +1,17 @@
-import { useRef, useEffect, useState } from "react";
-import { useMetaframeAndInput } from "@metapages/metaframe-hook";
-import { Box } from "@chakra-ui/react";
-import { Viewer } from "molstar/lib/apps/viewer/app.js";
-import { useHashParamJson } from "@metapages/hash-query";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
+import { Viewer } from 'molstar/lib/apps/viewer/app.js';
+
+import { Box } from '@chakra-ui/react';
+import { useHashParamJson } from '@metapages/hash-query';
+import {
+  MetaframeObject,
+  useMetaframe,
+} from '@metapages/metaframe-hook';
 
 const DefaultOptions = {
   hideControls: true,
@@ -24,7 +33,6 @@ const DefaultOptions = {
 export const MolstarViewer: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
   const refInstance = useRef<Viewer | null>(null);
-  const metaframeBlob = useMetaframeAndInput();
   const [xtcFile, setxtcFile] = useState<Blob | undefined>();
   const [groFile, setgroFile] = useState<Blob | undefined>();
   const [pdbId, setPdbId] = useState<string | undefined>();
@@ -32,6 +40,25 @@ export const MolstarViewer: React.FC = () => {
     "options",
     DefaultOptions
   );
+
+  // a nice hook handles all the metaframe machinery
+  const metaframeObj: MetaframeObject = useMetaframe();
+  const [metaframeInputs, setMetaframeInputs] = useState<any>({});
+  useEffect(() => {
+    if (!metaframeObj.metaframe) {
+      return;
+    }
+    const disposer = metaframeObj.metaframe.onInputs((inputs) => {
+      setMetaframeInputs(inputs);
+    });
+    setMetaframeInputs(metaframeObj.metaframe.getInputs());
+
+    return () => {
+      disposer();
+    }
+
+  }, [metaframeObj.metaframe]);
+
 
   // show pdbId
   useEffect(() => {
@@ -110,17 +137,17 @@ export const MolstarViewer: React.FC = () => {
 
   // handle metaframe inputs
   useEffect(() => {
-    if (metaframeBlob?.inputs?.["pdb-id"]) {
-      setPdbId(metaframeBlob?.inputs?.["pdb-id"]);
+    if (metaframeInputs?.["pdb-id"]) {
+      setPdbId(metaframeInputs?.["pdb-id"]);
     }
 
-    if (metaframeBlob?.inputs?.["target.xtc"]) {
-      setxtcFile(metaframeBlob?.inputs?.["target.xtc"]);
+    if (metaframeInputs?.["target.xtc"]) {
+      setxtcFile(metaframeInputs?.["target.xtc"]);
     }
-    if (metaframeBlob?.inputs?.["target.gro"]) {
-      setgroFile(metaframeBlob?.inputs?.["target.gro"]);
+    if (metaframeInputs?.["target.gro"]) {
+      setgroFile(metaframeInputs?.["target.gro"]);
     }
-  }, [setOptions, setPdbId, metaframeBlob?.inputs, setxtcFile, setgroFile]);
+  }, [setOptions, setPdbId, metaframeInputs, setxtcFile, setgroFile]);
 
   return (
     <Box
