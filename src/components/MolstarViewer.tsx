@@ -152,7 +152,7 @@ export const MolstarViewer: React.FC = () => {
   return (
     <Box
       width="100%"
-      height="50vh"
+      height="100vh"
       id="viewer"
       borderWidth="1px"
       borderRadius="lg"
