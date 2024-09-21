@@ -66,8 +66,6 @@ export const MolstarViewer: React.FC = () => {
     if (!pdbData || !ref.current) {
       return;
     }
-
-    console.log('pdbData', pdbData);
     
     if (refInstance.current) {
       refInstance.current.plugin.dispose();
