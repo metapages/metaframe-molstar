@@ -1,101 +1,8 @@
 {
-	"version": "0.6",
+	"version": "",
 	"metadata": {
 		"name": "Molstar Molecule Viewer",
-		"description": "https://molstar.org/",
-		"operations": {
-			"edit": {
-				"type": "metapage",
-				"metaframe": "molstar",
-				"params": [
-					{
-						"metaframe": "molstar-config",
-						"from": "text",
-						"to": "options"
-					}
-				],
-				"metapage": {
-					"meta": {
-						"layouts": {
-							"react-grid-layout": {
-								"props": {
-									"cols": 12,
-									"margin": [
-										10,
-										20
-									],
-									"rowHeight": 100,
-									"containerPadding": [
-										5,
-										5
-									]
-								},
-								"layout": [
-									{
-										"h": 1,
-										"i": "pdb",
-										"w": 2,
-										"x": 0,
-										"y": 0,
-										"moved": false,
-										"static": false
-									},
-									{
-										"h": 1,
-										"i": "docs",
-										"w": 3,
-										"x": 2,
-										"y": 0,
-										"moved": false,
-										"static": false
-									},
-									{
-										"h": 6,
-										"i": "molstar",
-										"w": 7,
-										"x": 5,
-										"y": 0,
-										"moved": false,
-										"static": false
-									},
-									{
-										"h": 5,
-										"i": "molstar-config",
-										"w": 5,
-										"x": 0,
-										"y": 1,
-										"moved": false,
-										"static": false
-									}
-								]
-							}
-						}
-					},
-					"version": "0.3",
-					"metaframes": {
-						"pdb": {
-							"url": "https://metapages.org/metaframes/pdb-input-button/"
-						},
-						"docs": {
-							"url": "https://markdown.mtfm.io/#?base64=W0xpbmsgdG8gb3B0aW9ucyBkb2N1bWVudGF0aW9uXShodHRwczovL2dpdGh1Yi5jb20vbW9sc3Rhci9tb2xzdGFyL2Jsb2IvOTYyNDEzN2MwZDU3ZGI1ZDBkZDFjNDlmYTYyNGZiNTNkN2Q0MTlhMy9zcmMvYXBwcy92aWV3ZXIvYXBwLnRzI0w3NCk="
-						},
-						"molstar": {
-							"url": "https://molstar.mtfm.io/#?options=eyJlbWRiUHJvdmlkZXIiOiJyY3NiIiwiaGlkZUNvbnRyb2xzIjpmYWxzZSwibGF5b3V0SXNFeHBhbmRlZCI6dHJ1ZSwibGF5b3V0U2hvd0NvbnRyb2xzIjp0cnVlLCJsYXlvdXRTaG93TGVmdFBhbmVsIjp0cnVlLCJsYXlvdXRTaG93TG9nIjp0cnVlLCJsYXlvdXRTaG93UmVtb3RlU3RhdGUiOnRydWUsImxheW91dFNob3dTZXF1ZW5jZSI6dHJ1ZSwicGRiUHJvdmlkZXIiOiJyY3NiIiwidmlld3BvcnRTaG93QW5pbWF0aW9uIjp0cnVlLCJ2aWV3cG9ydFNob3dFeHBhbmQiOnRydWUsInZpZXdwb3J0U2hvd1NlbGVjdGlvbk1vZGUiOmZhbHNlfQ==",
-							"inputs": [
-								{
-									"source": "pdb_id",
-									"target": "pdb-id",
-									"metaframe": "pdb"
-								}
-							]
-						},
-						"molstar-config": {
-							"url": "https://editor.mtfm.io/#?options=eyJoaWRlbWVudWlmaWZyYW1lIjp0cnVlLCJtb2RlIjoianNvbiIsInNhdmVsb2FkaW5oYXNoIjp0cnVlLCJ0aGVtZSI6InZzLWRhcmsifQ==&text=ewogICJoaWRlQ29udHJvbHMiOiBmYWxzZSwKCiAgImxheW91dElzRXhwYW5kZWQiOiB0cnVlLAogICJsYXlvdXRTaG93Q29udHJvbHMiOiB0cnVlLAogICJsYXlvdXRTaG93UmVtb3RlU3RhdGUiOiB0cnVlLAogICJsYXlvdXRTaG93U2VxdWVuY2UiOiB0cnVlLAogICJsYXlvdXRTaG93TG9nIjogdHJ1ZSwKICAibGF5b3V0U2hvd0xlZnRQYW5lbCI6IHRydWUsCgogICJ2aWV3cG9ydFNob3dFeHBhbmQiOiB0cnVlLAogICJ2aWV3cG9ydFNob3dTZWxlY3Rpb25Nb2RlIjogZmFsc2UsCiAgInZpZXdwb3J0U2hvd0FuaW1hdGlvbiI6IHRydWUsCiAgInBkYlByb3ZpZGVyIjogInJjc2IiLAogICJlbWRiUHJvdmlkZXIiOiAicmNzYiIKfQ=="
-						}
-					}
-				}
-			}
-		}
+		"description": "https://molstar.org/"
 	},
 	"inputs": {
 		"pdb-id": {
@@ -110,9 +17,15 @@
 			"type": "gromacs/gro",
 			"description": "gromacs topology file"
 		},
+		"target.cif": {
+			"type": "Protein Data Bank/CIF"
+		},
 		"config": {
 			"type": "molstar/config",
 			"description": "https://github.com/molstar/pdbe-molstar/wiki/1.-PDBe-Molstar-as-JS-plugin"
 		}
-	}
+	},
+	"hashParams": [
+		"options"
+	]
 }

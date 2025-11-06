@@ -1,23 +1,32 @@
-import { useEffect, useState, useCallback } from "react";
-import { useHashParamJson } from "@metapages/hash-query";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  CheckIcon,
+  CloseIcon,
+  SettingsIcon,
+} from '@chakra-ui/icons';
 import {
   Box,
   Drawer,
-  DrawerOverlay,
+  DrawerBody,
   DrawerContent,
   DrawerHeader,
-  DrawerBody,
+  DrawerOverlay,
   Grid,
   GridItem,
+  HStack,
   IconButton,
   Input,
   Select,
-  HStack,
   Spacer,
   Switch,
   Text,
-} from "@chakra-ui/react";
-import { CheckIcon, CloseIcon, SettingsIcon } from "@chakra-ui/icons";
+} from '@chakra-ui/react';
+import { useHashParamJson } from '@metapages/hash-query/react-hooks';
 
 export type OptionType = "string" | "boolean" | "option" | "number";
 

@@ -3,7 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { ChakraProvider } from '@chakra-ui/react';
-import { WithMetaframe } from '@metapages/metaframe-hook';
+import { WithMetaframe } from '@metapages/metapage-react';
 
 import { App } from './App';
 

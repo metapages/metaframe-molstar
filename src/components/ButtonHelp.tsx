@@ -1,14 +1,18 @@
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useState,
+} from 'react';
+
+import { QuestionIcon } from '@chakra-ui/icons';
 import {
   Drawer,
-  DrawerOverlay,
-  DrawerContent,
   DrawerBody,
-  IconButton,
   DrawerCloseButton,
-} from "@chakra-ui/react";
-import { isIframe } from "@metapages/metaframe-hook";
-import { QuestionIcon } from "@chakra-ui/icons";
+  DrawerContent,
+  DrawerOverlay,
+  IconButton,
+} from '@chakra-ui/react';
+import { isIframe } from '@metapages/metapage';
 
 export const ButtonHelp: React.FC<{ url?: string }> = ({ url }) => {
   const [open, setOpen] = useState<boolean>(isIframe() || window.location.hash.length >= 3 ? false : true);
