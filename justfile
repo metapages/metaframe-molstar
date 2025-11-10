@@ -5,7 +5,7 @@ set shell                          := ["bash", "-c"]
 set dotenv-load                    := true
 export APP_FQDN                    := env_var_or_default("APP_FQDN", "metaframe1.localhost")
 export APP_PORT                    := env_var_or_default("APP_PORT", "4430")
-PACKAGE_NAME_SHORT                 := file_name(`cat package.json | jq -r '.name' | sd '.*/' ''`)
+PACKAGE_NAME_SHORT                 := file_name(`cat package.json | jq -r '.name' | sed 's!.*/!!'`)
 # vite needs an extra memory boost
 vite                               := "VITE_APP_FQDN=" + APP_FQDN + " VITE_APP_PORT=" + APP_PORT + " NODE_OPTIONS='--max_old_space_size=16384' ./node_modules/vite/bin/vite.js"
 tsc                                := "./node_modules/typescript/bin/tsc"
@@ -24,7 +24,7 @@ grey                               := "\\e[90m"
     just --list --unsorted --list-heading $'🌱 Commands:\n\n'
     echo -e ""
     echo -e "    Github  URL 🔗 {{green}}$(cat package.json | jq -r '.repository.url'){{normal}}"
-    echo -e "    Publish URL 🔗 {{green}}https://$(cat package.json | jq -r '.name' | sd '/.*' '' | sd '@' '').github.io/{{PACKAGE_NAME_SHORT}}/{{normal}}"
+    echo -e "    Publish URL 🔗 {{green}}https://metapages.github.io/{{PACKAGE_NAME_SHORT}}/{{normal}}"
     echo -e "    Develop URL 🔗 {{green}}https://{{APP_FQDN}}:{{APP_PORT}}/{{normal}}"
     echo -e ""
 
