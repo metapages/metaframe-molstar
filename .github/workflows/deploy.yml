@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - 'partial-fixes-deploy'
+      - 'main'
 
 jobs:
   deploy:
