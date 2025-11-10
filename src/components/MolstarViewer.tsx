@@ -1,233 +1,233 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useRef, useState } from "react";
 
-import { Viewer } from 'molstar/lib/apps/viewer/app.js';
-import { useDebouncedCallback } from 'use-debounce';
+import { Viewer } from "molstar/lib/apps/viewer/app.js";
+import { PluginCommands } from "molstar/lib/mol-plugin/commands";
+import { PluginConfig } from "molstar/lib/mol-plugin/config";
+import { ColorNames } from "molstar/lib/mol-util/color/names";
 
-import { Box } from '@chakra-ui/react';
-import { useHashParamJson } from '@metapages/hash-query/react-hooks';
-import {
-  MetaframeObject,
-  useMetaframe,
-} from '@metapages/metapage-react';
+import { Box, Flex } from "@chakra-ui/react";
+import { useHashParam } from "@metapages/hash-query/react-hooks";
 
-const DefaultOptions = {
-  hideControls: true,
+import { useMolstarOptions, ViewerOptions } from "./MolstarOptions";
+import { MolstarSettingsButton } from "./MolstarSettingsButton";
+import { useDebouncedMetaframeInputs } from "./useDebouncedMetaframeInputs";
+import equal from "fast-deep-equal/es6";
 
-  layoutIsExpanded: false,
-  layoutShowControls: false,
-  layoutShowRemoteState: false,
-  layoutShowSequence: false,
-  layoutShowLog: false,
-  layoutShowLeftPanel: false,
-
-  viewportShowExpand: false,
-  viewportShowSelectionMode: false,
-  viewportShowAnimation: false,
-  pdbProvider: "rcsb",
-  emdbProvider: "rcsb",
-};
-
-// Helper function to handle datarefs: if value is {type: 'url', value: '...'}, download it
-async function resolveDataref(value: any): Promise<any> {
-  if (value && typeof value === 'object' && value.type === 'url' && typeof value.value === 'string') {
-    try {
-      const response = await fetch(value.value);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${value.value}: ${response.statusText}`);
-      }
-      // For binary files (xtc, gro), return as Blob; for text files (pdb, cif), return as text
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/octet-stream') || contentType.includes('binary')) {
-        return await response.blob();
-      } else {
-        return await response.text();
-      }
-    } catch (error) {
-      console.error('Error downloading dataref URL:', error);
-      throw error;
+// Build DefaultOptions - we need to merge with defaults when creating viewer
+const buildDefaultOptions = (): Record<string, any> => {
+  const defaults: Record<string, any> = {};
+  ViewerOptions.forEach((option) => {
+    if (option.default !== undefined) {
+      defaults[option.name] = option.default;
     }
-  }
-  return value;
-}
+  });
+  return defaults;
+};
+const DefaultOptions = buildDefaultOptions();
+
+Object.defineProperty(navigator, "xr", {
+  get: function () {
+    return undefined;
+  },
+});
 
 export const MolstarViewer: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
+  // @ts-ignore
   const refInstance = useRef<Viewer | null>(null);
-  const [xtcFile, setxtcFile] = useState<Blob | undefined>();
-  const [groFile, setgroFile] = useState<Blob | undefined>();
-  const [pdbData, setPdbData] = useState<{data:string, isTrajectory?:boolean} | undefined>();
-  const [cifData, setCifData] = useState<string | Blob | {data: string | Blob} | undefined>();
+
+  // Single state to track what molecule to display - prevents multiple useEffects from firing
+  const [moleculeToDisplay, setMoleculeToDisplay] = useState<{
+    type: "pdbId" | "pdbData" | "cifData" | "trajectory" | null;
+    pdbId?: string;
+    pdbData?: { data: string; isTrajectory?: boolean };
+    cifData?: string | Blob | { data: string | Blob };
+    xtcFile?: Blob;
+    groFile?: Blob;
+  } | null>(null);
+
+  // Keep separate pdbId for hash param compatibility
   const [pdbId, setPdbId] = useState<string | undefined>();
-  const [options, setOptions] = useHashParamJson<any>(
-    "options",
-    DefaultOptions
+  const [pdbIdFromHash, setMoleculeIdFromHash] = useHashParam(
+    "pdbId",
+    undefined
   );
 
-  // a nice hook handles all the metaframe machinery
-  const metaframeObj: MetaframeObject = useMetaframe();
-  const [metaframeInputs, setMetaframeInputs] = useState<any>({});
-  useEffect(() => {
-    if (!metaframeObj.metaframe) {
-      return;
-    }
-    const disposer = metaframeObj.metaframe.onInputs((inputs) => {
-      setMetaframeInputs(inputs);
-    });
-    setMetaframeInputs(metaframeObj.metaframe.getInputs());
+  const [options, setOptions] = useMolstarOptions();
 
+  const metaframeInputs = useDebouncedMetaframeInputs();
+
+  // Update page background color when backgroundColor option changes
+  // This prevents flickering when the viewer is recreated
+  useEffect(() => {
+    const backgroundColor =
+      options.backgroundColor || DefaultOptions.backgroundColor || "white";
+    const bgColor = backgroundColor === "white" ? "white" : "black";
+
+    // Update the page background to prevent flickering
+    document.body.style.backgroundColor = bgColor;
+    const htmlElement = document.documentElement;
+    if (htmlElement) {
+      htmlElement.style.backgroundColor = bgColor;
+    }
+
+    // Cleanup: restore default on unmount
     return () => {
-      disposer();
-    }
+      document.body.style.backgroundColor = "";
+      const htmlEl = document.documentElement;
+      if (htmlEl) {
+        htmlEl.style.backgroundColor = "";
+      }
+    };
+  }, [options.backgroundColor]);
 
-  }, [metaframeObj.metaframe]);
-
-
-  // show pdbData
+  // Load pdbId from separate hash parameter
   useEffect(() => {
-    if (!pdbData || !ref.current) {
+    if (
+      pdbIdFromHash &&
+      typeof pdbIdFromHash === "string" &&
+      pdbIdFromHash.trim() !== ""
+    ) {
+      const id = pdbIdFromHash.trim();
+      // Only set if different from current pdbId to avoid unnecessary reloads
+      if (pdbId !== id) {
+        setPdbId(id);
+        setMoleculeToDisplay({ type: "pdbId", pdbId: id });
+      }
+    } else if (
+      (pdbIdFromHash === "" ||
+        pdbIdFromHash === undefined ||
+        pdbIdFromHash === null) &&
+      pdbId
+    ) {
+      // Clear pdbId if pdbId is cleared
+      setPdbId(undefined);
+      setMoleculeToDisplay(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdbIdFromHash]); // Only depend on pdbIdFromHash to avoid loops
+
+  // Single useEffect to handle all molecule display - prevents flashing
+  const lastOptionsRef = useRef<Record<string, any>>();
+  useEffect(() => {
+    if (!moleculeToDisplay || !ref.current) {
       return;
     }
-    
-    if (refInstance.current) {
-      refInstance.current.plugin.dispose();
-      refInstance.current = null;
-    }
+
     const viewerContainer = ref.current;
     if (!viewerContainer) {
       return;
     }
-
+    let cancelled = false;
+    const disposers: (() => void)[] = [];
     (async () => {
-      refInstance.current = await Viewer.create(viewerContainer, {
-        ...options,
-      });
+      if (cancelled) {
+        return;
+      }
+
+      // Merge options with defaults to ensure all options are present
+      // This prevents Molstar from using its own defaults when options are filtered
+      const mergedOptions = { ...DefaultOptions, ...options };
+
+      if (
+        !refInstance.current ||
+        !equal(mergedOptions, lastOptionsRef.current)
+      ) {
+        refInstance.current?.dispose();
+        // lastOptionsRef.current = mergedOptions;
+        refInstance.current = await Viewer.create(viewerContainer, {
+          ...mergedOptions,
+          config: [
+            [PluginConfig.Viewport.ShowXR, "never"], // Hide XR/VR icon
+          ],
+        });
+        lastOptionsRef.current = mergedOptions;
+
+        refInstance.current.plugin.canvas3d?.setProps({
+          renderer: {
+            backgroundColor:
+              options.backgroundColor === "white"
+                ? ColorNames.white
+                : ColorNames.black,
+          },
+        });
+      }
+
       const viewer = refInstance.current;
-      const pdbBlob = new Blob([pdbData.data], { type: 'text/plain' });
-      const pdbUrl = URL.createObjectURL(pdbBlob);
 
-      // TODO handle isTrajectory
-      viewer.loadStructureFromUrl(pdbUrl, 'pdb');
-    })();
-    
-  }, [pdbData, options, refInstance, ref]);
+      // Get all current structures
+      const allStructures =
+        viewer.plugin.managers.structure.hierarchy.current.structures;
 
-  // show cifData
-  useEffect(() => {
-    if (!cifData || !ref.current) {
-      return;
-    }
-    
-    if (refInstance.current) {
-      refInstance.current.plugin.dispose();
-      refInstance.current = null;
-    }
-    const viewerContainer = ref.current;
-    if (!viewerContainer) {
-      return;
-    }
+      // Remove all structures
+      await viewer.plugin.managers.structure.hierarchy.remove(
+        allStructures,
+        true
+      );
 
-    (async () => {
-      refInstance.current = await Viewer.create(viewerContainer, {
-        ...options,
-      });
-      const viewer = refInstance.current;
-      
-      // Extract the actual data from various possible formats
-      let actualData: string | Blob;
-      if (cifData instanceof Blob) {
-        actualData = cifData;
-      } else if (typeof cifData === 'string') {
-        actualData = cifData;
-      } else if (cifData && typeof cifData === 'object' && 'data' in cifData) {
-        // Handle object format like {data: string | Blob}
-        actualData = cifData.data as string | Blob;
-      } else if (cifData && typeof cifData === 'object' && 'type' in cifData && (cifData as any).type === 'url' && 'value' in cifData) {
-        // Handle dataref format: {type: 'url', value: 'https://...'}
-        // This should have been resolved in the input processing, but handle it here as a fallback
-        try {
-          const resolved = await resolveDataref(cifData);
-          actualData = resolved;
-        } catch (error) {
-          console.error('Error resolving CIF dataref:', error);
+      if (moleculeToDisplay.type === "pdbId" && moleculeToDisplay.pdbId) {
+        await viewer.loadPdb(moleculeToDisplay.pdbId);
+      } else if (
+        moleculeToDisplay.type === "pdbData" &&
+        moleculeToDisplay.pdbData
+      ) {
+        const pdbBlob = new Blob([moleculeToDisplay.pdbData.data], {
+          type: "text/plain",
+        });
+        const pdbUrl = URL.createObjectURL(pdbBlob);
+        await viewer.loadStructureFromUrl(pdbUrl, "pdb");
+      } else if (
+        moleculeToDisplay.type === "cifData" &&
+        moleculeToDisplay.cifData
+      ) {
+        let actualData: string | Blob;
+        const cifData = moleculeToDisplay.cifData;
+        if (cifData instanceof Blob) {
+          actualData = cifData;
+        } else if (typeof cifData === "string") {
+          actualData = cifData;
+        } else if (
+          cifData &&
+          typeof cifData === "object" &&
+          "data" in cifData
+        ) {
+          actualData = cifData.data as string | Blob;
+        } else {
+          console.error("Invalid CIF data type:", typeof cifData, cifData);
           return;
         }
-      } else {
-        console.error('Invalid CIF data type:', typeof cifData, cifData);
-        return;
-      }
-      
-      // Handle both Blob and string inputs
-      let cifUrl: string;
-      if (actualData instanceof Blob) {
-        // Read Blob as text to ensure proper encoding, then create new Blob with correct MIME type
-        const text = await actualData.text();
-        const cifBlob = new Blob([text], { type: 'text/plain; charset=utf-8' });
-        cifUrl = URL.createObjectURL(cifBlob);
-      } else if (typeof actualData === 'string') {
-        // Create Blob from string with proper encoding
-        const cifBlob = new Blob([actualData], { type: 'text/plain; charset=utf-8' });
-        cifUrl = URL.createObjectURL(cifBlob);
-      } else {
-        console.error('Invalid CIF data format after extraction:', typeof actualData);
-        return;
-      }
 
-      try {
-        // TODO handle isTrajectory
-        await viewer.loadStructureFromUrl(cifUrl, 'mmcif');
-      } catch (error) {
-        console.error('Error loading CIF file:', error);
-        // Clean up the object URL on error
-        URL.revokeObjectURL(cifUrl);
-      }
-    })();
-    
-  }, [cifData, options, refInstance, ref]);
+        let cifUrl: string;
+        if (actualData instanceof Blob) {
+          const text = await actualData.text();
+          if (cancelled) {
+            return;
+          }
+          const cifBlob = new Blob([text], {
+            type: "text/plain; charset=utf-8",
+          });
+          cifUrl = URL.createObjectURL(cifBlob);
+        } else {
+          const cifBlob = new Blob([actualData], {
+            type: "text/plain; charset=utf-8",
+          });
+          cifUrl = URL.createObjectURL(cifBlob);
+        }
 
-  // show pdbId
-  useEffect(() => {
-    if (pdbId) {
-      if (refInstance.current) {
-        refInstance.current.plugin.dispose();
-        refInstance.current = null;
-      }
-      const viewerContainer = ref.current;
-      if (!viewerContainer) {
-        return;
-      }
-
-      (async () => {
-        refInstance.current = await Viewer.create(viewerContainer, {
-          ...options,
-        });
-        refInstance.current.loadPdb(pdbId);
-      })();
-    }
-  }, [pdbId, options, refInstance, ref]);
-
-  // show trajectories
-  useEffect(() => {
-    if (!xtcFile || !groFile) {
-      return;
-    }
-    const viewerContainer = ref.current;
-    if (!viewerContainer) {
-      return;
-    }
-
-    (async () => {
-      (async () => {
-        refInstance.current = await Viewer.create(viewerContainer, {
-          ...options,
-        });
-        const xtcObjectUrl = URL.createObjectURL(xtcFile);
-        const groObjectUrl = URL.createObjectURL(groFile);
-
-        refInstance.current.loadTrajectory({
+        try {
+          await viewer.loadStructureFromUrl(cifUrl, "mmcif");
+        } catch (error) {
+          console.error("Error loading CIF file:", error);
+          URL.revokeObjectURL(cifUrl);
+        }
+      } else if (
+        moleculeToDisplay.type === "trajectory" &&
+        moleculeToDisplay.xtcFile &&
+        moleculeToDisplay.groFile
+      ) {
+        const xtcObjectUrl = URL.createObjectURL(moleculeToDisplay.xtcFile);
+        const groObjectUrl = URL.createObjectURL(moleculeToDisplay.groFile);
+        await viewer.loadTrajectory({
           model: { kind: "model-url", url: groObjectUrl, format: "gro" },
           coordinates: {
             kind: "coordinates-url",
@@ -235,80 +235,66 @@ export const MolstarViewer: React.FC = () => {
             format: "xtc",
             isBinary: true,
           },
-          // preset: "all-models", // or 'default'
-          preset: "default", // or 'default'
+          preset: "default",
         });
-      })();
+      }
+      // Reset camera after structure is loaded
+      // To reset to the default view of the loaded structure
+      await viewer.plugin.canvas3d?.requestCameraReset();
     })();
-  }, [xtcFile, groFile, options, refInstance, ref]);
 
-  // create the viewer or update options
+    return () => {
+      cancelled = true;
+      disposers.forEach((disposer) => disposer());
+    };
+  }, [moleculeToDisplay, options]);
+
+  // handle metaframe inputs - process sequentially with debouncing
   useEffect(() => {
-    //Get element from HTML/Template to place the viewer
-    const viewerContainer = ref.current;
-    if (!viewerContainer) {
+    if (!metaframeInputs || Object.keys(metaframeInputs).length === 0) {
       return;
     }
 
-    (async () => {
-      if (refInstance.current) {
-        refInstance.current.plugin.dispose();
-        refInstance.current = null;
-      }
-      if (!refInstance.current) {
-        refInstance.current = await Viewer.create(viewerContainer, {
-          ...options,
-        });
-      }
-    })();
-  }, [ref, refInstance, options]);
+    const inputs = metaframeInputs;
 
-  // Debounced callback to process metaframe inputs
-  // Only processes the first valid input found (in priority order)
-  const processInputs = useDebouncedCallback(async (inputs: any) => {
-    if (!inputs) {
-      return;
-    }
-    
-    // Clear all state first
-    setPdbId(undefined);
-    setPdbData(undefined);
-    setCifData(undefined);
-    setxtcFile(undefined);
-    setgroFile(undefined);
-    
     const keys = Object.keys(inputs);
-    
+
     // Priority 1: pdb-id (direct ID lookup)
     for (const key of keys) {
-      if (key === "pdb-id" || key === "pdbid" || key === "pdbId" || key === "pdbID") {
+      if (
+        key === "pdb-id" ||
+        key === "pdbid" ||
+        key === "pdbId" ||
+        key === "pdbID"
+      ) {
         const value = inputs[key];
-        const resolvedValue = await resolveDataref(value);
-        setPdbId(resolvedValue);
-        return; // Found valid input, stop processing
+        setPdbId(value);
+        setMoleculeToDisplay({ type: "pdbId", pdbId: value });
+        return;
       }
     }
-    
+
     // Priority 2: .pdb files
     for (const key of keys) {
       if (key.endsWith(".pdb")) {
         const value = inputs[key];
-        const resolvedValue = await resolveDataref(value);
-        setPdbData({data:resolvedValue, isTrajectory:key.includes("traj")});
-        return; // Found valid input, stop processing
+        setMoleculeToDisplay({
+          type: "pdbData",
+          pdbData: { data: value, isTrajectory: key.includes("traj") },
+        });
+        return;
       }
     }
-    
+
     // Priority 3: .cif files
     for (const key of keys) {
       if (key.endsWith(".cif")) {
         const value = inputs[key];
-        const resolvedValue = await resolveDataref(value);
-        setCifData(resolvedValue);
-        return; // Found valid input, stop processing
+        setMoleculeToDisplay({ type: "cifData", cifData: value });
+        return;
       }
     }
-    
+
     // Priority 4: trajectory files (need both .xtc and .gro)
     let xtcKey: string | undefined;
     let groKey: string | undefined;
@@ -322,27 +308,38 @@ export const MolstarViewer: React.FC = () => {
     if (xtcKey && groKey) {
       const xtcValue = inputs[xtcKey];
       const groValue = inputs[groKey];
-      const resolvedXtc = await resolveDataref(xtcValue);
-      const resolvedGro = await resolveDataref(groValue);
-      setxtcFile(resolvedXtc);
-      setgroFile(resolvedGro);
-      return; // Found valid input, stop processing
+      setMoleculeToDisplay({
+        type: "trajectory",
+        xtcFile: xtcValue,
+        groFile: groValue,
+      });
+      return;
     }
-  }, 200);
 
-  // handle metaframe inputs
-  useEffect(() => {
-    processInputs(metaframeInputs);
-  }, [metaframeInputs, processInputs]);
+    // No valid input found
+    setMoleculeToDisplay(null);
+  }, [metaframeInputs]);
 
   return (
-    <Box
-      width="100%"
-      height="100vh"
-      id="viewer"
-      borderWidth="1px"
-      borderRadius="lg"
-      ref={ref}
-    ></Box>
+    <Flex direction="column" width="100%" height="100vh" position="relative">
+      <Box
+        flex="1"
+        width="100%"
+        id="viewer"
+        borderWidth="1px"
+        borderRadius="lg"
+        backgroundColor={
+          options.backgroundColor === "black" ? "black" : "white"
+        }
+        ref={ref}
+      ></Box>
+      <MolstarSettingsButton
+        options={ViewerOptions}
+        currentOptions={options}
+        pdbId={pdbIdFromHash || ""}
+        onOptionsChange={setOptions}
+        onMoleculeIdChange={setMoleculeIdFromHash}
+      />
+    </Flex>
   );
 };
