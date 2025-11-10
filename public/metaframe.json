@@ -1,8 +1,8 @@
 {
-	"version": "",
+	"version": "1",
 	"metadata": {
 		"name": "Molstar Molecule Viewer",
-		"description": "https://molstar.org/"
+		"description": "https://github.com/metapages/metaframe-molstar"
 	},
 	"inputs": {
 		"pdb-id": {
@@ -26,6 +26,11 @@
 		}
 	},
 	"hashParams": [
-		"options"
+		"config",
+		"pdbId",
+		"pdbUrl",
+		"cifUrl",
+		"xtcUrl",
+		"groUrl"
 	]
 }

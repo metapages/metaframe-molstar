@@ -1,6 +1,8 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -105,19 +107,71 @@ const OptionsMenu: React.FC<{
 }> = ({ hashkey, isOpen, setOpen, options }) => {
   // isOpen = true; // for debugging/developing
 
+  // Build default options object from all options that have defaults
+  // Memoize to prevent recreation on every render
+  const defaultOptions = useMemo(() => {
+    return Object.fromEntries(
+      options
+        .filter((o) => o.default !== undefined)
+        .map((option) => [option!.name!, option!.default!])
+    );
+  }, [options]);
+
   const [optionsInHashParams, setOptionsInHashParams] =
     useHashParamJson<GenericOptions>(
-      hashkey ? hashkey : "options",
-      Object.fromEntries(
-        options
-          .filter((o) => o.default)
-          .map((option) => [option!.name!, option!.default!])
-      )
+      hashkey ? hashkey : "config",
+      defaultOptions
     );
 
-  const [localOptions, setLocalOptions] = useState<GenericOptions>(
-    optionsInHashParams || {}
-  );
+  // Initialize localOptions with defaults merged with hash params
+  const [localOptions, setLocalOptions] = useState<GenericOptions>(() => {
+    return { ...defaultOptions, ...(optionsInHashParams || {}) };
+  });
+
+  // Track previous values to prevent unnecessary updates
+  const prevOptionsInHashParamsRef = useRef<string>('');
+  const prevIsOpenRef = useRef(isOpen);
+  const isInitialMountRef = useRef(true);
+
+  // Sync localOptions with hash params
+  useEffect(() => {
+    // Create a stable string representation for comparison
+    const currentHashParamsStr = JSON.stringify(optionsInHashParams);
+    const prevHashParamsStr = prevOptionsInHashParamsRef.current;
+    const isOpenChanged = prevIsOpenRef.current !== isOpen;
+    
+    // On initial mount, initialize the ref
+    if (isInitialMountRef.current) {
+      prevOptionsInHashParamsRef.current = currentHashParamsStr;
+      prevIsOpenRef.current = isOpen;
+      isInitialMountRef.current = false;
+      return;
+    }
+    
+    // Only sync if:
+    // 1. Menu is opening (to show current state)
+    // 2. Menu is closed AND hash params changed (to stay in sync)
+    const shouldSync = 
+      (isOpen && isOpenChanged) || // Menu opening
+      (!isOpen && currentHashParamsStr !== prevHashParamsStr); // Hash params changed while closed
+    
+    if (shouldSync) {
+      const newOptions = { ...defaultOptions, ...(optionsInHashParams || {}) };
+      setLocalOptions((current) => {
+        // Only update if something actually changed
+        const hasChanges = Object.keys(newOptions).some(
+          key => current[key] !== newOptions[key]
+        ) || Object.keys(current).some(
+          key => newOptions[key] === undefined && current[key] !== undefined
+        );
+        return hasChanges ? newOptions : current;
+      });
+    }
+    
+    // Update refs
+    prevOptionsInHashParamsRef.current = currentHashParamsStr;
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, defaultOptions, optionsInHashParams]);
 
   const [filteredOptions] = useOptions(options, localOptions);
 
@@ -179,7 +233,15 @@ const OptionsMenu: React.FC<{
 
     // assume valid!
     // now maybe map to other values
-    const convertedOptions: GenericOptions = {};
+    // Start with defaults to ensure all options are included
+    const defaults = Object.fromEntries(
+      options
+        .filter((o) => o.default !== undefined)
+        .map((option) => [option!.name!, option!.default!])
+    );
+    const convertedOptions: GenericOptions = { ...defaults };
+    
+    // Override with user's localOptions
     Object.keys(localOptions).forEach((key) => {
       const option: Option | undefined = filteredOptions.find(
         (o) => o.name === key
